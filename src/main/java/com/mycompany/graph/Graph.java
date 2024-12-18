@@ -5,6 +5,7 @@
 package com.mycompany.graph;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -12,86 +13,92 @@ import java.util.Queue;
  *
  * @author crypt
  */
+class Vertex {
+	public int index;
+	public int distance;
+	public int parent;
+	public int end;
+	public boolean found;
+	public LinkedList<Integer> adjList;
+	public Vertex (int i, int d) { index = i; distance = d; parent = -1; end = -1; adjList = new LinkedList(); }
+};
+
 public class Graph {
-	public class Vertix {
-		public int vertix;
-		public int distance;
-		public int parent;
-		public int end;
-		public Vertix (int v, int d) { vertix = v; distance = d; parent = -1; end = -1; }
-	};
 	public static int time;
-	private final int vertices;
-	private LinkedList<LinkedList<Integer>> adjList;
-	//private ArrayList visited;
-	//private Queue toVisit;
+	public final int verticesCount;
+	public int breadthStart;
+	public LinkedList<Vertex> vertices;
 	
 	public Graph (int maxVertices) {
-		
-		vertices = maxVertices;
-		adjList = new LinkedList();
-		
+		verticesCount = maxVertices;
+		vertices = new LinkedList();
 		for (int i = 0; i < maxVertices; i++) {
-			adjList.add(new LinkedList());
+			vertices.add(new Vertex(i, -1));
+			vertices.get(0).adjList = new LinkedList();
 		}
 	}
 	
 	public boolean setEdge(int from, int to) {
-		if (from < 0 || to < 0 || from >= vertices || to >= vertices)
+		if (from < 0 || to < 0 || from >= verticesCount || to >= verticesCount)
 			throw new ArrayIndexOutOfBoundsException ("vertix index is out of bounds.");
-		if (adjList.get(from).contains(to)) return false;
-		adjList.get(from).add(to);
+		if (vertices.get(from).adjList.contains(to)) return false;
+		vertices.get(from).adjList.add(to);
 		return true;
 	}
 	
-	public void breadthFirstSearch (int start) {
-		if (start < 0 || start >= vertices)
+	public void breadthFirstSearch () {
+		if (breadthStart < 0 || breadthStart >= verticesCount)
 			throw new ArrayIndexOutOfBoundsException ("vertix index is out of bounds.");
-		ArrayList visited = new ArrayList<Vertix>();
-		ArrayList visitedIndices = new ArrayList<Integer>();
-		Queue toVisit = new LinkedList<Vertix>();
+		ArrayList visited = new ArrayList<Integer>();
+		Queue toVisit = new LinkedList<Integer>();
 		
-		toVisit.add(new Vertix(start, 0));
+		vertices.get(breadthStart).distance = 0;
+		toVisit.add(breadthStart);
 		
 		while (!toVisit.isEmpty()) {
-			Vertix node = (Vertix)toVisit.poll();
-				visited.add(node);
-				visitedIndices.add(node.vertix);
-			for (int adj : adjList.get(node.vertix)) {
-				if (visitedIndices.contains(adj))
+			int nodeIndex = (Integer)toVisit.poll();
+			visited.add(nodeIndex);
+			System.out.println("Node " + nodeIndex + " visited at distance " + vertices.get(nodeIndex).distance + ".");
+			for (int adj : vertices.get(nodeIndex).adjList) {
+				if (visited.contains(adj) || toVisit.contains(adj))
 					continue;
-				Vertix child = new Vertix(adj, node.distance + 1);
-				child.parent = node.vertix;
-				toVisit.add(child);
+				vertices.get(adj).parent = nodeIndex;
+				vertices.get(adj).distance = vertices.get(nodeIndex).distance;
+				toVisit.add(adj);
+				System.out.println("Saw new node " + vertices.get(adj).index + " at distance " + vertices.get(adj).distance + ".");
 			}
 		}
 	}
 	
-	private void depthFirstSearchHelper (Vertix node, ArrayList visited, ArrayList visitedIndices) {
+	private void depthFirstSearchHelper (int nodeIndex, ArrayList visited) {
 		time++;
-		node.distance = time;
+		vertices.get(nodeIndex).distance = time;
+		System.out.println("Found node " + nodeIndex + " at time " + time + ".");
 		
-		for (int adj : adjList.get(node.vertix)) {
-			if (visitedIndices.contains(adj))
+		for (int adj : vertices.get(nodeIndex).adjList) {
+			if (visited.contains(adj) || vertices.get(adj).found)
 				continue;
-			Vertix child = new Vertix(adj, -1);
-			child.parent = node.vertix;
-			depthFirstSearchHelper(child, visited, visitedIndices);
+			vertices.get(adj).distance = vertices.get(nodeIndex).distance + 1;
+			vertices.get(adj).parent = nodeIndex;
+			vertices.get(adj).found = true;
+			depthFirstSearchHelper(adj, visited);
 		}
-		visited.add(node);
+		visited.add(nodeIndex);
 		time++;
-		node.end = time;
+		System.out.println("Visited node " + nodeIndex + " at time " + time + ".");
+		vertices.get(nodeIndex).end = time;
 	}
 		
 	public void depthFirstSearch () {
 		time = 0;
-		ArrayList visited = new ArrayList<Vertix>();
-		ArrayList visitedIndices = new ArrayList<Integer>();
-		for (int i = 0; i < vertices; i++) {
-			if (visitedIndices.contains(i))
+		ArrayList visited = new ArrayList<Integer>();
+		for (int i = 0; i < verticesCount; i++) {
+			if (visited.contains(i))
 				continue;
-			Vertix node = new Vertix(i, time);
-			depthFirstSearchHelper(node, visited, visitedIndices);
+			vertices.get(i).found = true;
+			vertices.get(i).distance = time;
+			System.out.println("New start from node " + i + ".");
+			depthFirstSearchHelper(i, visited);
 		}
 	}
 }
